@@ -1,4 +1,4 @@
-import { initLogger, logger, withCategoryPrefix } from "./logger.js";
+import { initLogger, logger, withLogTag } from "./logger.js";
 import { initDb, closeDb } from "./db.js";
 import { startServer, stopServer } from "./server.js";
 import { loadFullConfig, loadConfigFromEnv, parseCliArgs } from "./config.js";
@@ -41,7 +41,7 @@ main().catch((error) => {
 
 // Graceful shutdown
 async function shutdown(signal: string): Promise<void> {
-  return withCategoryPrefix(["app"], async () => {
+  return withLogTag(["app"], async () => {
     logger.info("Received {signal}, shutting down...", { signal });
     try {
       await stopServer();

@@ -112,4 +112,4 @@ export function getLogLevel(): LogLevel {
  * });
  * ```
  */
-export const withCategoryPrefix = withCategoryPrefixImpl;
+export const withLogTag = withCategoryPrefixImpl;

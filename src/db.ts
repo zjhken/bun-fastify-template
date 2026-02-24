@@ -1,5 +1,5 @@
 import Database from "bun:sqlite";
-import { logger, withCategoryPrefix } from "./logger.js";
+import { logger, withLogTag } from "./logger.js";
 
 // Get database path from environment or use default
 function getDbPath(): string {
@@ -13,7 +13,7 @@ let db: Database | null = null;
  * Initialize the SQLite database
  */
 export function initDb(): Database {
-  return withCategoryPrefix(["db"], () => {
+  return withLogTag(["db"], () => {
     if (db) {
       return db;
     }
@@ -50,7 +50,7 @@ function createTables(): void {
   if (!db) return;
 
   // Example: users table
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
@@ -81,7 +81,7 @@ export function getDb(): Database {
  * Close the database connection
  */
 export function closeDb(): void {
-  withCategoryPrefix(["db"], () => {
+  withLogTag(["db"], () => {
     if (db) {
       db.close();
       db = null;

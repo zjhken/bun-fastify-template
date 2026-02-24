@@ -1,5 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import { logger, setLogLevel, getLogLevel, withCategoryPrefix } from "./logger.js";
+import { logger, setLogLevel, getLogLevel, withLogTag } from "./logger.js";
 
 const HOST = process.env.HOST || "0.0.0.0";
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -30,7 +30,7 @@ export function createServer(): FastifyInstance {
   // Health check endpoint - uses withCategoryPrefix to set category context
   app.get("/health", async () => {
     // All logs here will have category ["app", "health"]
-    return withCategoryPrefix(["health"], async () => {
+    return withLogTag(["health"], async () => {
       logger.info("Health check started");
 
       const dbStatus = checkDatabase();  // Uses default logger, but gets the category prefix
@@ -56,7 +56,7 @@ export function createServer(): FastifyInstance {
 
   // Set log level
   app.post("/api/log-level", async (request, reply) => {
-    return withCategoryPrefix(["server"], async () => {
+    return withLogTag(["server"], async () => {
       const body = request.body as { level?: string };
 
       if (!body.level) {
@@ -92,7 +92,7 @@ export function createServer(): FastifyInstance {
 
   // Example: Hello endpoint
   app.get("/api/hello", async () => {
-    return withCategoryPrefix(["api"], () => {
+    return withLogTag(["api"], () => {
       logger.info("Hello endpoint called");
       return { message: "Hello, world!" };
     });
@@ -100,7 +100,7 @@ export function createServer(): FastifyInstance {
 
   // Example: Echo endpoint
   app.post("/api/echo", async (request) => {
-    return withCategoryPrefix(["api"], () => {
+    return withLogTag(["api"], () => {
       logger.debug("Echo endpoint called with body: {body}", {
         body: request.body,
       });
@@ -115,7 +115,7 @@ export function createServer(): FastifyInstance {
 
   // Error handler
   app.setErrorHandler((error, request, reply) => {
-    return withCategoryPrefix(["server"], () => {
+    return withLogTag(["server"], () => {
       const err = error as { statusCode?: number; message?: string };
       logger.error("Request error: {error}", { error: err.message ?? String(error) });
 
@@ -138,7 +138,7 @@ export async function startServer(): Promise<FastifyInstance> {
 
   const srv = createServer();
 
-  return withCategoryPrefix(["server"], async () => {
+  return withLogTag(["server"], async () => {
     try {
       await srv.listen({ port: PORT, host: HOST });
       logger.info("Server listening on {host}:{port}", { host: HOST, port: PORT });
@@ -158,7 +158,7 @@ export async function startServer(): Promise<FastifyInstance> {
  * Stop the Fastify server
  */
 export async function stopServer(): Promise<void> {
-  return withCategoryPrefix(["server"], async () => {
+  return withLogTag(["server"], async () => {
     if (server) {
       await server.close();
       server = null;
