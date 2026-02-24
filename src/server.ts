@@ -56,8 +56,8 @@ export function createServer(): FastifyInstance {
 
   // Set log level
   app.post("/api/log-level", async (request, reply) => {
-    return withLogTag(["server"], async () => {
-      const body = request.body as { level?: string };
+    return withLogTag(["log"], async () => {
+      const body = request.body as { level?: string; category?: string[] };
 
       if (!body.level) {
         reply.code(400).send({ error: "Missing 'level' field in request body" });
@@ -75,17 +75,20 @@ export function createServer(): FastifyInstance {
       }
 
       const oldLevel = getLogLevel();
-      setLogLevel(body.level as LogLevel);
+      const category = body.category && body.category.length > 0 ? body.category : undefined;
+      setLogLevel(body.level as LogLevel, category);
 
-      logger.info("Log level changed: {old} -> {new}", {
+      logger.info("Log level changed: {old} -> {new} {category}", {
         old: oldLevel,
         new: body.level,
+        category: category ? `(${category.join(",")})` : "(global)",
       });
 
       return {
         success: true,
         oldLevel,
         newLevel: body.level,
+        category: category ?? "global",
       };
     });
   });
@@ -138,33 +141,29 @@ export async function startServer(): Promise<FastifyInstance> {
 
   const srv = createServer();
 
-  return withLogTag(["server"], async () => {
-    try {
-      await srv.listen({ port: PORT, host: HOST });
-      logger.info("Server listening on {host}:{port}", { host: HOST, port: PORT });
-      logger.info("Application started successfully");
-      server = srv;
-      return srv;
-    } catch (error) {
-      logger.error("Failed to start server: {error}", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
-  });
+  try {
+    await srv.listen({ port: PORT, host: HOST });
+    logger.info("Server listening on {host}:{port}", { host: HOST, port: PORT });
+    logger.info("Application started successfully");
+    server = srv;
+    return srv;
+  } catch (error) {
+    logger.error("Failed to start server: {error}", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }
 
 /**
  * Stop the Fastify server
  */
 export async function stopServer(): Promise<void> {
-  return withLogTag(["server"], async () => {
-    if (server) {
-      await server.close();
-      server = null;
-      logger.info("Server stopped");
-    }
-  });
+  if (server) {
+    await server.close();
+    server = null;
+    logger.info("Server stopped");
+  }
 }
 
 /**

@@ -24,7 +24,8 @@ function customFormatter(record: LogRecord): string {
   return `${timestamp}|${level}|${tags}|${message}`;
 }
 
-// Current log level (default: info)
+// Store log levels per category (empty array represents global/default)
+const categoryLogLevels = new Map<string, LogLevel>();
 let currentLogLevel: LogLevel = "info";
 
 /**
@@ -68,11 +69,51 @@ export function getCategoryLogger(category: string[]): Logger {
 }
 
 /**
- * Set the log level at runtime
+ * Convert category array to string key for Map
  */
-export function setLogLevel(level: LogLevel): void {
-  currentLogLevel = level;
-  // Reconfigure with new log level
+function categoryToKey(category: string[]): string {
+  return category.join(",");
+}
+
+/**
+ * Set the log level at runtime
+ * @param level - The log level to set
+ * @param category - Optional category array (e.g., ["app", "health"]). If not provided, sets global log level.
+ */
+export function setLogLevel(level: LogLevel, category?: string[]): void {
+  if (category && category.length > 0) {
+    // Set log level for specific category
+    const key = categoryToKey(category);
+    categoryLogLevels.set(key, level);
+  } else {
+    // Set global log level
+    currentLogLevel = level;
+  }
+
+  // Build loggers configuration
+  const loggersConfig: Array<{
+    category: string[];
+    sinks: string[];
+    lowestLevel: LogLevel;
+  }> = [
+    {
+      category: [],
+      sinks: ["console"],
+      lowestLevel: currentLogLevel,
+    },
+  ];
+
+  // Add category-specific loggers
+  for (const [catKey, catLevel] of categoryLogLevels.entries()) {
+    const catArray = catKey.split(",").filter((c) => c.length > 0);
+    loggersConfig.push({
+      category: catArray,
+      sinks: ["console"],
+      lowestLevel: catLevel,
+    });
+  }
+
+  // Reconfigure with new log levels
   configure({
     reset: true,
     sinks: {
@@ -81,13 +122,7 @@ export function setLogLevel(level: LogLevel): void {
         console.log(formatted);
       },
     },
-    loggers: [
-      {
-        category: ["app"],
-        sinks: ["console"],
-        lowestLevel: currentLogLevel,
-      },
-    ],
+    loggers: loggersConfig,
   }).catch((err) => {
     console.error("Failed to reconfigure logger:", err);
   });
