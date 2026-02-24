@@ -41,7 +41,7 @@ main().catch((error) => {
 
 // Graceful shutdown
 async function shutdown(signal: string): Promise<void> {
-  return withLogTag(["app"], async () => {
+  return withLogTag(["shutdown"], async () => {
     logger.info("Received {signal}, shutting down...", { signal });
     try {
       await stopServer();
